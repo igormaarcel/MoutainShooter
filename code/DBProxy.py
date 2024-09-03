@@ -1,26 +1,29 @@
-import sqlite3
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from code.Const import ENTITY_SPEED, ENTITY_SHOT_DELAY, WIN_HEIGHT
+from code.EnemyShot import EnemyShot
+from code.Entity import Entity
 
 
-class DBproxy:
+class Enemy(Entity):
+    def __init__(self, name: str, position: tuple):
+        super().__init__(name, position)
+        self.shot_delay = ENTITY_SHOT_DELAY[self.name]
+        self.speedy = ENTITY_SPEED[self.name]
 
-    def __init__(self, db_name: str):
-        self.db_name = db_name
-        self.connection = sqlite3.connect(db_name)
-        self.connection.execute('''
-                                           CREATE TABLE IF NOT EXISTS dados(
-                                           id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                           name TEXT NOT NULL,
-                                           score INTEGER NOT NULL,
-                                           date TEXT NOT NULL)
-                                        '''
-                                )
+    def move(self):
+        if self.name == 'Enemy3':
 
-    def save(self, score_dict: dict):
-        self.connection.execute('INSERT INTO dados (name, score, date) VALUES (:name, :score, :date)', score_dict)
-        self.connection.commit()
+            if self.rect.centery <= 0:
+                self.speedy = -2
+            elif self.rect.centery >= WIN_HEIGHT:
+                self.speedy = 1
+            self.rect.centery -= self.speedy
 
-    def retrieve_top10(self) -> list:
-        return self.connection.execute('SELECT * FROM dados ORDER BY score DESC LIMIT 10').fetchall()
+        self.rect.centerx -= ENTITY_SPEED[self.name]
 
-    def close(self):
-        return self.connection.close()
+    def shoot(self):
+        self.shot_delay -= 1
+        if self.shot_delay == 0:
+            self.shot_delay = ENTITY_SHOT_DELAY[self.name]
+            return EnemyShot(name=f'{self.name}Shot', position=(self.rect.centerx, self.rect.centery))
